@@ -80,8 +80,12 @@ load-test-db: ## Download and load the test employees database
 		unzip -q test_db.zip; \
 		rm test_db.zip; \
 	fi
+	@echo "$(YELLOW)Copying test database files to container...$(NC)"
+	@docker compose exec -T pxc-node1 mkdir -p /tmp/test_db
+	@docker cp test_db-master/. galera-pxc-node1-1:/tmp/test_db/
 	@echo "$(YELLOW)Importing database (this may take a few minutes)...$(NC)"
-	@docker compose exec -T pxc-node1 mysql -uroot -prootpass < test_db-master/employees.sql
+	@docker compose exec -T pxc-node1 bash -c "cd /tmp/test_db && mysql -uroot -prootpass < employees.sql"
+	@docker compose exec -T pxc-node1 rm -rf /tmp/test_db 2>/dev/null || true
 	@echo "$(GREEN)✓ Test database loaded successfully!$(NC)"
 
 clean: ## Stop cluster and remove containers
