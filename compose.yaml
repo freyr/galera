@@ -94,6 +94,27 @@ services:
       timeout: 5s
       retries: 10
 
+  backup-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    platform: linux/amd64
+    container_name: galera-backup-tools
+    hostname: backup-tools
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=rootpass
+      - BACKUP_DIR=/backups
+      - GALERA_NODES=pxc-node1:3306,pxc-node2:3306,pxc-node3:3306
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+    networks:
+      - galera_network
+    depends_on:
+      pxc-node1:
+        condition: service_healthy
+
   pmm-server:
     image: percona/pmm-server:3
     platform: linux/amd64

@@ -35,26 +35,26 @@ For **single database backup and restore to different clusters**, use the logica
 
 **Basic Usage:**
 ```bash
-make backup-logical
+make backup
 ```
 
 This creates a backup of the default `employees` database.
 
 **Backup a Specific Database:**
 ```bash
-make backup-logical DATABASE=mydb
+make backup DATABASE=mydb
 ```
 
 **Advanced Options:**
 ```bash
 # Use more threads for faster backup
-make backup-logical DATABASE=mydb THREADS=8
+make backup DATABASE=mydb THREADS=8
 
 # With compression (via script flag)
-./scripts/backup-logical.sh mydb --compress
+./scripts/backup.sh mydb --compress
 
 # Specify chunk size for large tables
-./scripts/backup-logical.sh mydb --chunk-size=200
+./scripts/backup.sh mydb --chunk-size=200
 ```
 
 **What Happens During Backup:**
@@ -94,24 +94,24 @@ make list-backups
 
 **Basic Restore:**
 ```bash
-make restore-logical BACKUP=mydumper_employees_20250113_120000
+make restore BACKUP=mydumper_employees_20250113_120000
 ```
 
 **Restore to a Different Database Name:**
 ```bash
-make restore-logical BACKUP=mydumper_employees_20250113_120000 DATABASE=new_db_name
+make restore BACKUP=mydumper_employees_20250113_120000 DATABASE=new_db_name
 ```
 
 **Advanced Options:**
 ```bash
 # Use more threads for faster restore
-make restore-logical BACKUP=mydumper_employees_20250113_120000 THREADS=8
+make restore BACKUP=mydumper_employees_20250113_120000 THREADS=8
 
 # Overwrite existing tables
-./scripts/restore-logical.sh mydumper_employees_20250113_120000 --overwrite
+./scripts/restore.sh mydumper_employees_20250113_120000 --overwrite
 
 # Restore to a different node
-./scripts/restore-logical.sh mydumper_employees_20250113_120000 --node=pxc-node2
+./scripts/restore.sh mydumper_employees_20250113_120000 --node=pxc-node2
 ```
 
 ---
@@ -271,7 +271,7 @@ myloader --directory=/backups/mybackup --enable-binlog ...
 
 ```bash
 # On Production Cluster
-make backup-logical DATABASE=orders
+make backup DATABASE=orders
 # Creates: ./backups/mydumper_orders_20250113_143000/
 
 # Copy backup to development cluster
@@ -279,7 +279,7 @@ scp -r ./backups/mydumper_orders_20250113_143000/ dev-server:/path/to/galera/bac
 
 # On Development Cluster
 make list-backups  # Verify backup is present
-make restore-logical BACKUP=mydumper_orders_20250113_143000
+make restore BACKUP=mydumper_orders_20250113_143000
 
 # Verification
 make shell-node1
@@ -315,17 +315,17 @@ mysql> \q
 
 ```bash
 # Backup
-make backup-logical                          # Backup 'employees' db
-make backup-logical DATABASE=mydb           # Backup specific db
-make backup-logical DATABASE=mydb THREADS=8 # Faster backup
+make backup                         # Backup 'employees' db
+make backup DATABASE=mydb           # Backup specific db
+make backup DATABASE=mydb THREADS=8 # Faster backup
 
 # List Backups
 make list-backups
 
 # Restore
-make restore-logical BACKUP=mydumper_mydb_20250113_120000
-make restore-logical BACKUP=mydumper_mydb_20250113_120000 DATABASE=newname
-make restore-logical BACKUP=mydumper_mydb_20250113_120000 THREADS=8
+make restore BACKUP=mydumper_mydb_20250113_120000
+make restore BACKUP=mydumper_mydb_20250113_120000 DATABASE=newname
+make restore BACKUP=mydumper_mydb_20250113_120000 THREADS=8
 
 # Monitoring
 make status                  # Cluster health

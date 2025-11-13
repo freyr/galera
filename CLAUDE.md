@@ -146,20 +146,20 @@ Key metrics to monitor:
 
 **Two backup methods are available:**
 
-#### Logical Backups (MyDumper/MyLoader) - **RECOMMENDED for single database backup/restore**
+#### Logical Backups (MyDumper/MyLoader) - **RECOMMENDED** (default method)
 
 Create a logical backup (portable, can restore to any cluster):
 ```bash
-make backup-logical                          # Backup 'employees' database
-make backup-logical DATABASE=mydb           # Backup specific database
-make backup-logical DATABASE=mydb THREADS=8 # Faster with more threads
+make backup                          # Backup 'employees' database
+make backup DATABASE=mydb           # Backup specific database
+make backup DATABASE=mydb THREADS=8 # Faster with more threads
 ```
 
 Restore a logical backup:
 ```bash
 make list-backups                           # List available backups
-make restore-logical BACKUP=mydumper_mydb_20250113_120000
-make restore-logical BACKUP=mydumper_mydb_20250113_120000 DATABASE=new_name
+make restore BACKUP=mydumper_mydb_20250113_120000
+make restore BACKUP=mydumper_mydb_20250113_120000 DATABASE=new_name
 ```
 
 **Key Features:**
@@ -171,17 +171,22 @@ make restore-logical BACKUP=mydumper_mydb_20250113_120000 DATABASE=new_name
 
 **📖 See [GALERA_BACKUP_RESTORE.md](./GALERA_BACKUP_RESTORE.md) for detailed documentation**
 
-#### Physical Backups (XtraBackup) - For full cluster recovery
+#### Physical Backups (XtraBackup) - For full cluster recovery only
 
-Create an XtraBackup of a database:
+Create an XtraBackup of the entire cluster:
 ```bash
-make backup                    # Backs up 'employees' database by default
-make backup DATABASE=mydb      # Backup specific database
+make backup-cluster                    # Physical cluster backup
+make backup-cluster DATABASE=mydb      # Backup specific database
+```
+
+Restore a cluster backup (provides manual instructions):
+```bash
+make restore-cluster BACKUP=xtrabackup_20250113_120000
 ```
 
 Backups are stored in `./backups/xtrabackup_YYYYMMDD_HHMMSS/` with both backup and prepare logs included.
 
-**Note:** XtraBackup creates physical backups suitable for full cluster recovery and SST, but has limitations for single-database cross-cluster restores. Use logical backups (above) for that use case.
+**Note:** XtraBackup creates physical backups suitable for full cluster recovery and SST. Cluster restore is a complex manual process requiring all nodes to be stopped. Use logical backups (above, the default method) for most use cases.
 
 ### Test Data
 
@@ -220,10 +225,11 @@ Run `make help` to see all available commands. Key targets:
 | `make start` | Start the cluster (includes setup) |
 | `make stop` | Stop the cluster |
 | `make status` | Show detailed cluster status |
-| `make backup-logical` | Create logical backup with mydumper (use `DATABASE=name THREADS=N`) |
-| `make restore-logical` | Restore logical backup with myloader (use `BACKUP=dir DATABASE=name`) |
+| `make backup` | Create logical backup with mydumper (use `DATABASE=name THREADS=N`) |
+| `make restore` | Restore logical backup with myloader (use `BACKUP=dir DATABASE=name`) |
 | `make list-backups` | List all available backups (physical and logical) |
-| `make backup` | Create XtraBackup - deprecated, use backup-logical |
+| `make backup-cluster` | Create XtraBackup for full cluster recovery (physical backup) |
+| `make restore-cluster` | Restore XtraBackup (use `BACKUP=dir`) - Shows manual instructions |
 | `make load-test-db` | Load test employees database |
 | `make pmm-setup` | Register nodes with PMM monitoring |
 | `make pmm-open` | Open PMM web interface |

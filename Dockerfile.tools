@@ -1,0 +1,25 @@
+# Dockerfile for Galera Backup/Restore Tools Container
+# This container provides mydumper/myloader and MySQL client for backup operations
+
+FROM rockylinux:8
+
+# Install MySQL client and dependencies
+RUN dnf install -y \
+    mysql \
+    curl \
+    ca-certificates \
+    && dnf clean all
+
+# Install mydumper/myloader
+RUN cd /tmp && \
+    curl -sL -o mydumper.rpm https://github.com/mydumper/mydumper/releases/download/v0.16.3-3/mydumper-0.16.3-3.el8.x86_64.rpm && \
+    rpm -i mydumper.rpm && \
+    rm -f mydumper.rpm && \
+    mydumper --version && \
+    myloader --version
+
+# Set working directory
+WORKDIR /workspace
+
+# Keep container running
+CMD ["tail", "-f", "/dev/null"]
