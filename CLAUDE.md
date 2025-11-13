@@ -144,6 +144,35 @@ Key metrics to monitor:
 
 ### Backups
 
+**Two backup methods are available:**
+
+#### Logical Backups (MyDumper/MyLoader) - **RECOMMENDED for single database backup/restore**
+
+Create a logical backup (portable, can restore to any cluster):
+```bash
+make backup-logical                          # Backup 'employees' database
+make backup-logical DATABASE=mydb           # Backup specific database
+make backup-logical DATABASE=mydb THREADS=8 # Faster with more threads
+```
+
+Restore a logical backup:
+```bash
+make list-backups                           # List available backups
+make restore-logical BACKUP=mydumper_mydb_20250113_120000
+make restore-logical BACKUP=mydumper_mydb_20250113_120000 DATABASE=new_name
+```
+
+**Key Features:**
+- ✅ Portable across clusters and MySQL versions
+- ✅ Can restore single databases to different clusters
+- ✅ Galera-aware with automatic replication
+- ✅ Post-restore verification across all nodes
+- ✅ Handles flow control and cluster health checks
+
+**📖 See [GALERA_BACKUP_RESTORE.md](./GALERA_BACKUP_RESTORE.md) for detailed documentation**
+
+#### Physical Backups (XtraBackup) - For full cluster recovery
+
 Create an XtraBackup of a database:
 ```bash
 make backup                    # Backs up 'employees' database by default
@@ -151,6 +180,8 @@ make backup DATABASE=mydb      # Backup specific database
 ```
 
 Backups are stored in `./backups/xtrabackup_YYYYMMDD_HHMMSS/` with both backup and prepare logs included.
+
+**Note:** XtraBackup creates physical backups suitable for full cluster recovery and SST, but has limitations for single-database cross-cluster restores. Use logical backups (above) for that use case.
 
 ### Test Data
 
@@ -189,7 +220,10 @@ Run `make help` to see all available commands. Key targets:
 | `make start` | Start the cluster (includes setup) |
 | `make stop` | Stop the cluster |
 | `make status` | Show detailed cluster status |
-| `make backup` | Create XtraBackup (use `DATABASE=name`) |
+| `make backup-logical` | Create logical backup with mydumper (use `DATABASE=name THREADS=N`) |
+| `make restore-logical` | Restore logical backup with myloader (use `BACKUP=dir DATABASE=name`) |
+| `make list-backups` | List all available backups (physical and logical) |
+| `make backup` | Create XtraBackup - deprecated, use backup-logical |
 | `make load-test-db` | Load test employees database |
 | `make pmm-setup` | Register nodes with PMM monitoring |
 | `make pmm-open` | Open PMM web interface |

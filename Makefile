@@ -1,4 +1,4 @@
-.PHONY: help setup start stop restart status clean destroy backup restore check-cluster load-test-db logs shell-node1 shell-node2 shell-node3
+.PHONY: help setup start stop restart status clean destroy backup backup-logical restore-logical restore list-backups check-cluster load-test-db logs shell-node1 shell-node2 shell-node3
 
 # Default target
 .DEFAULT_GOAL := help
@@ -8,7 +8,9 @@ BACKUP_DIR := ./backups
 CONFIG_DIR := ./config
 DATA_DIR := ./data
 DATABASE ?= employees
+BACKUP ?=
 BACKUP_TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
+THREADS ?= 4
 
 # Colors for output
 CYAN := \033[0;36m
@@ -56,8 +58,42 @@ shell-node2: ## Open MySQL shell on node 2
 shell-node3: ## Open MySQL shell on node 3
 	@docker compose exec pxc-node3 mysql -uroot -prootpass
 
-backup: ## Create XtraBackup of a database (use DATABASE=name to specify)
+backup: ## Create XtraBackup of a database (use DATABASE=name to specify) [DEPRECATED - use backup-logical]
 	@./scripts/backup.sh $(DATABASE)
+
+backup-logical: ## Create logical backup with mydumper (use DATABASE=name, THREADS=N)
+	@./scripts/backup-logical.sh $(DATABASE) --threads=$(THREADS)
+
+restore-logical: ## Restore logical backup with myloader (use BACKUP=dir DATABASE=name THREADS=N)
+	@if [ -z "$(BACKUP)" ]; then \
+		echo "$(RED)Error: BACKUP parameter is required$(NC)"; \
+		echo ""; \
+		echo "Usage: make restore-logical BACKUP=<backup_directory> [DATABASE=name] [THREADS=N]"; \
+		echo ""; \
+		echo "Example:"; \
+		echo "  make restore-logical BACKUP=mydumper_employees_20250113_120000"; \
+		echo "  make restore-logical BACKUP=mydumper_employees_20250113_120000 DATABASE=new_db"; \
+		echo ""; \
+		echo "Available backups:"; \
+		docker compose exec -T pxc-node1 ls -1 /backups/ | grep mydumper_ || echo "No logical backups found"; \
+		exit 1; \
+	fi
+	@./scripts/restore-logical.sh $(BACKUP) $(DATABASE) --threads=$(THREADS)
+
+list-backups: ## List all available backups (both XtraBackup and logical)
+	@echo "$(CYAN)=========================================$(NC)"
+	@echo "$(CYAN)  Available Backups$(NC)"
+	@echo "$(CYAN)=========================================$(NC)"
+	@echo ""
+	@echo "$(GREEN)XtraBackup (Physical) Backups:$(NC)"
+	@docker compose exec -T pxc-node1 bash -c "ls -1dh /backups/xtrabackup_* 2>/dev/null | xargs -I {} basename {} | while read dir; do echo '  $(YELLOW)'\$$dir'$(NC)'; done" || echo "  $(YELLOW)No XtraBackup backups found$(NC)"
+	@echo ""
+	@echo "$(GREEN)MyDumper (Logical) Backups:$(NC)"
+	@docker compose exec -T pxc-node1 bash -c "ls -1dh /backups/mydumper_* 2>/dev/null | xargs -I {} basename {} | while read dir; do echo '  $(YELLOW)'\$$dir'$(NC)'; done" || echo "  $(YELLOW)No logical backups found$(NC)"
+	@echo ""
+	@echo "$(CYAN)To restore a logical backup:$(NC)"
+	@echo "  $(YELLOW)make restore-logical BACKUP=<backup_directory>$(NC)"
+	@echo ""
 
 pmm-setup: ## Setup PMM monitoring for all nodes
 	@./scripts/pmm-setup.sh
