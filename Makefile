@@ -59,6 +59,19 @@ shell-node3: ## Open MySQL shell on node 3
 backup: ## Create XtraBackup of a database (use DATABASE=name to specify)
 	@./scripts/backup.sh $(DATABASE)
 
+pmm-setup: ## Setup PMM monitoring for all nodes
+	@./scripts/pmm-setup.sh
+
+pmm-open: ## Open PMM web interface
+	@echo "$(CYAN)Opening PMM at https://localhost:8443${NC}"
+	@echo "Username: admin"
+	@echo "Password: admin"
+	@open https://localhost:8443 || xdg-open https://localhost:8443 || echo "Please open https://localhost:8443 in your browser"
+
+pmm-status: ## Check PMM server status
+	@echo "$(CYAN)PMM Server Status:${NC}"
+	@docker compose exec -T pmm-server curl -s http://localhost:8080/v1/readyz && echo "$(GREEN)✓ PMM Server is healthy${NC}" || echo "$(RED)✗ PMM Server is not ready${NC}"
+
 load-test-db: ## Download and load the test employees database
 	@echo "$(GREEN)Loading test database (employees)...$(NC)"
 	@if [ ! -d test_db-master ]; then \

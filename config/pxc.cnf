@@ -54,7 +54,7 @@ innodb_log_buffer_size=16M
 # Flushing - relaxed for better performance (production uses 1)
 # 2 = write to log file at each commit, flush to disk every second
 innodb_flush_log_at_trx_commit=2
-innodb_flush_method=fsync
+innodb_flush_method=O_DIRECT
 
 # Data integrity - KEEP ENABLED (production disables for speed, we keep for safety)
 innodb_doublewrite=1
@@ -135,9 +135,7 @@ log_bin_trust_function_creators=1
 # Logging
 # ============================================
 slow_query_log=1
-slow_query_log_file=/var/log/mysql/slowquery.log
 long_query_time=2
 # Advanced slow query filtering from production
 log_slow_filter="full_scan,tmp_table_on_disk,filesort_on_disk"
 log_slow_verbosity="full"
-log_error=/var/log/mysql/error.log

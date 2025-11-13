@@ -23,14 +23,30 @@ All nodes use:
 - Shared backup directory at `./backups`
 
 ### Key Galera Configuration
-- Cluster name: `pxc-cluster`
-- SST method: `xtrabackup-v2`
-- Strict mode: `PERMISSIVE` (PXC 5.7 default for compatibility)
+All MySQL/Galera configuration is centralized in `config/pxc.cnf`. The compose.yaml only specifies node-specific parameters:
+- `wsrep_cluster_name`: Cluster identifier
+- `wsrep_cluster_address`: Galera cluster members (node-specific)
+- `wsrep_node_address`: Individual node address (node-specific)
+
+Configuration highlights from `config/pxc.cnf`:
+- Strict mode: `ENFORCING` (production-grade)
 - Binary log format: `ROW` (required for Galera)
 - InnoDB auto-increment lock mode: `2` (required for Galera)
-- Gcache size: 512M
+- Gcache size: 2G (write-set cache for IST)
 - Query cache: Disabled (improves Galera performance)
+- InnoDB buffer pool: 3GB (production uses 12.5GB)
+- GTID mode: Enabled for advanced replication
 - Galera library: `/usr/lib64/galera3/libgalera_smm.so` (auto-detected)
+
+## Monitoring
+
+The cluster includes **PMM (Percona Monitoring and Management)** for comprehensive monitoring:
+- Real-time Galera cluster metrics
+- Query Analytics (QAN)
+- Performance Schema integration
+- Galera-specific dashboards
+
+Access PMM: `https://localhost:8443` (default credentials: admin/admin)
 
 ## Common Commands
 
@@ -148,6 +164,20 @@ This automatically:
 - Imports it into node 1 (automatically replicates to all nodes)
 - The dataset contains ~300k records across 6 tables
 
+### PMM Monitoring
+
+Setup and access PMM monitoring:
+```bash
+make pmm-setup    # Register all nodes with PMM (run after first start)
+make pmm-status   # Check PMM server health
+make pmm-open     # Open PMM web interface in browser
+```
+
+Access PMM directly at: `https://localhost:8443`
+- Default username: `admin`
+- Default password: `admin`
+- **Important:** Change password after first login!
+
 ## Makefile Targets
 
 Run `make help` to see all available commands. Key targets:
@@ -161,6 +191,9 @@ Run `make help` to see all available commands. Key targets:
 | `make status` | Show detailed cluster status |
 | `make backup` | Create XtraBackup (use `DATABASE=name`) |
 | `make load-test-db` | Load test employees database |
+| `make pmm-setup` | Register nodes with PMM monitoring |
+| `make pmm-open` | Open PMM web interface |
+| `make pmm-status` | Check PMM server health |
 | `make shell-node1` | Open MySQL shell on node 1 |
 | `make logs` | Show logs from all nodes |
 | `make clean` | Remove containers (keeps data) |
@@ -201,9 +234,16 @@ Run `make help` to see all available commands. Key targets:
 
 ## Credentials
 
-- MySQL root password: `rootpass`
+**MySQL:**
+- Root password: `rootpass`
 - XtraBackup password: `xtrabackuppass`
-- These are for development/testing only
+
+**PMM (Percona Monitoring and Management):**
+- URL: `https://localhost:8443`
+- Username: `admin`
+- Password: `admin` (change after first login!)
+
+**Note:** All credentials are for development/testing only
 
 ## Network Configuration
 

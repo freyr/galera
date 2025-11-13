@@ -17,14 +17,6 @@ services:
       --wsrep_cluster_name=pxc-cluster
       --wsrep_cluster_address=gcomm://
       --wsrep_node_address=pxc-node1
-      --wsrep_sst_method=xtrabackup-v2
-      --wsrep_provider_options="gcache.size=512M;gcs.fc_limit=256"
-      --pxc_strict_mode=ENFORCING
-      --binlog_format=ROW
-      --default_storage_engine=InnoDB
-      --innodb_autoinc_lock_mode=2
-      --character_set_server=utf8mb4
-      --collation_server=utf8mb4_unicode_ci
     volumes:
       - pxc-node1-data:/var/lib/mysql
       - ./backups:/backups
@@ -55,14 +47,6 @@ services:
       --wsrep_cluster_name=pxc-cluster
       --wsrep_cluster_address=gcomm://pxc-node1,pxc-node2,pxc-node3
       --wsrep_node_address=pxc-node2
-      --wsrep_sst_method=xtrabackup-v2
-      --wsrep_provider_options="gcache.size=512M;gcs.fc_limit=256"
-      --pxc_strict_mode=ENFORCING
-      --binlog_format=ROW
-      --default_storage_engine=InnoDB
-      --innodb_autoinc_lock_mode=2
-      --character_set_server=utf8mb4
-      --collation_server=utf8mb4_unicode_ci
     volumes:
       - pxc-node2-data:/var/lib/mysql
       - ./backups:/backups
@@ -95,14 +79,6 @@ services:
       --wsrep_cluster_name=pxc-cluster
       --wsrep_cluster_address=gcomm://pxc-node1,pxc-node2,pxc-node3
       --wsrep_node_address=pxc-node3
-      --wsrep_sst_method=xtrabackup-v2
-      --wsrep_provider_options="gcache.size=512M;gcs.fc_limit=256"
-      --pxc_strict_mode=ENFORCING
-      --binlog_format=ROW
-      --default_storage_engine=InnoDB
-      --innodb_autoinc_lock_mode=2
-      --character_set_server=utf8mb4
-      --collation_server=utf8mb4_unicode_ci
     volumes:
       - pxc-node3-data:/var/lib/mysql
       - ./backups:/backups
@@ -118,6 +94,27 @@ services:
       timeout: 5s
       retries: 10
 
+  pmm-server:
+    image: percona/pmm-server:3
+    platform: linux/amd64
+    container_name: pmm-server
+    hostname: pmm-server
+    ports:
+      - "8443:8443"
+      - "8080:8080"
+    environment:
+      - DISABLE_TELEMETRY=1
+    volumes:
+      - pmm-server-data:/srv
+    networks:
+      - galera_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/readyz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
 networks:
   galera_network:
     driver: bridge
@@ -126,3 +123,4 @@ volumes:
   pxc-node1-data:
   pxc-node2-data:
   pxc-node3-data:
+  pmm-server-data:

@@ -1,0 +1,62 @@
+#!/bin/bash
+set -e
+
+# Colors for output
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${CYAN}=========================================${NC}"
+echo -e "${CYAN}  PMM Setup for Galera Cluster${NC}"
+echo -e "${CYAN}=========================================${NC}"
+echo ""
+
+# Wait for PMM Server to be ready
+echo -e "${YELLOW}Waiting for PMM Server to be ready...${NC}"
+timeout=120
+while [ $timeout -gt 0 ]; do
+    if docker compose exec -T pmm-server curl -sf http://localhost:8080/v1/readyz > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ PMM Server is ready!${NC}"
+        break
+    fi
+    sleep 2
+    timeout=$((timeout - 2))
+done
+
+if [ $timeout -le 0 ]; then
+    echo -e "${RED}✗ PMM Server failed to start${NC}"
+    exit 1
+fi
+
+echo ""
+echo -e "${YELLOW}Registering PXC nodes with PMM...${NC}"
+
+# Register each node
+for node in pxc-node1 pxc-node2 pxc-node3; do
+    echo -e "${CYAN}Registering ${node}...${NC}"
+
+    docker compose exec -T pmm-client-${node##*-} pmm-admin add mysql \
+        --username=root \
+        --password=rootpass \
+        --query-source=perfschema \
+        --host=${node} \
+        --port=3306 \
+        --service-name=${node} \
+        --cluster=pxc-cluster 2>&1 | grep -v "already exists" || true
+
+    echo -e "${GREEN}✓ ${node} registered${NC}"
+done
+
+echo ""
+echo -e "${GREEN}=========================================${NC}"
+echo -e "${GREEN}  PMM Setup Complete!${NC}"
+echo -e "${GREEN}=========================================${NC}"
+echo ""
+echo -e "Access PMM at: ${CYAN}https://localhost:8443${NC}"
+echo -e "Username: ${YELLOW}admin${NC}"
+echo -e "Password: ${YELLOW}admin${NC}"
+echo ""
+echo -e "${YELLOW}Note: Change the default password after first login!${NC}"
+echo ""
