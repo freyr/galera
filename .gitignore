@@ -1,0 +1,4 @@
+*.zip
+test_db-master/
+backups/
+data/

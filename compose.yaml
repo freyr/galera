@@ -1,0 +1,128 @@
+services:
+  pxc-node1:
+    image: percona/percona-xtradb-cluster:5.7
+    platform: linux/amd64
+    hostname: pxc-node1
+    ports:
+      - "3306:3306"
+      - "4567:4567"
+      - "4568:4568"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - CLUSTER_NAME=pxc-cluster
+      - XTRABACKUP_PASSWORD=xtrabackuppass
+      # Bootstrap the cluster
+      - CLUSTER_JOIN=
+    command: >
+      --wsrep_cluster_name=pxc-cluster
+      --wsrep_cluster_address=gcomm://
+      --wsrep_node_address=pxc-node1
+      --wsrep_sst_method=xtrabackup-v2
+      --wsrep_provider_options="gcache.size=512M;gcs.fc_limit=256"
+      --pxc_strict_mode=ENFORCING
+      --binlog_format=ROW
+      --default_storage_engine=InnoDB
+      --innodb_autoinc_lock_mode=2
+      --character_set_server=utf8mb4
+      --collation_server=utf8mb4_unicode_ci
+    volumes:
+      - pxc-node1-data:/var/lib/mysql
+      - ./backups:/backups
+      - ./config/pxc.cnf:/etc/mysql/conf.d/pxc.cnf
+    networks:
+      - galera_network
+    healthcheck:
+      test: ["CMD", "mysql", "-uroot", "-prootpass", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  pxc-node2:
+    image: percona/percona-xtradb-cluster:5.7
+    platform: linux/amd64
+    hostname: pxc-node2
+    ports:
+      - "3307:3306"
+      - "4569:4567"
+      - "4570:4568"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - CLUSTER_NAME=pxc-cluster
+      - CLUSTER_JOIN=pxc-node1
+      - XTRABACKUP_PASSWORD=xtrabackuppass
+    command: >
+      --wsrep_cluster_name=pxc-cluster
+      --wsrep_cluster_address=gcomm://pxc-node1,pxc-node2,pxc-node3
+      --wsrep_node_address=pxc-node2
+      --wsrep_sst_method=xtrabackup-v2
+      --wsrep_provider_options="gcache.size=512M;gcs.fc_limit=256"
+      --pxc_strict_mode=ENFORCING
+      --binlog_format=ROW
+      --default_storage_engine=InnoDB
+      --innodb_autoinc_lock_mode=2
+      --character_set_server=utf8mb4
+      --collation_server=utf8mb4_unicode_ci
+    volumes:
+      - pxc-node2-data:/var/lib/mysql
+      - ./backups:/backups
+      - ./config/pxc.cnf:/etc/mysql/conf.d/pxc.cnf
+    networks:
+      - galera_network
+    depends_on:
+      pxc-node1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysql", "-uroot", "-prootpass", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  pxc-node3:
+    image: percona/percona-xtradb-cluster:5.7
+    platform: linux/amd64
+    hostname: pxc-node3
+    ports:
+      - "3308:3306"
+      - "4571:4567"
+      - "4572:4568"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - CLUSTER_NAME=pxc-cluster
+      - CLUSTER_JOIN=pxc-node1
+      - XTRABACKUP_PASSWORD=xtrabackuppass
+    command: >
+      --wsrep_cluster_name=pxc-cluster
+      --wsrep_cluster_address=gcomm://pxc-node1,pxc-node2,pxc-node3
+      --wsrep_node_address=pxc-node3
+      --wsrep_sst_method=xtrabackup-v2
+      --wsrep_provider_options="gcache.size=512M;gcs.fc_limit=256"
+      --pxc_strict_mode=ENFORCING
+      --binlog_format=ROW
+      --default_storage_engine=InnoDB
+      --innodb_autoinc_lock_mode=2
+      --character_set_server=utf8mb4
+      --collation_server=utf8mb4_unicode_ci
+    volumes:
+      - pxc-node3-data:/var/lib/mysql
+      - ./backups:/backups
+      - ./config/pxc.cnf:/etc/mysql/conf.d/pxc.cnf
+    networks:
+      - galera_network
+    depends_on:
+      pxc-node2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysql", "-uroot", "-prootpass", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  galera_network:
+    driver: bridge
+
+volumes:
+  pxc-node1-data:
+  pxc-node2-data:
+  pxc-node3-data:

@@ -1,0 +1,143 @@
+[mysqld]
+# ============================================
+# PXC 5.7 Configuration - Non-Production
+# Based on production release.cnf, adapted for Docker
+# ============================================
+
+# ============================================
+# Galera/PXC Settings
+# ============================================
+pxc_strict_mode=ENFORCING
+innodb_autoinc_lock_mode=2
+
+# wsrep_provider is auto-detected by Percona XtraDB Cluster
+# For PXC 5.7: /usr/lib64/galera3/libgalera_smm.so
+wsrep_slave_threads=4
+wsrep_sst_method=xtrabackup-v2
+wsrep_sst_auth=root:rootpass
+
+# Galera provider options - scaled for non-prod
+# gcache: Write-set cache for IST (Incremental State Transfer)
+# evs: Extended Virtual Synchrony timeouts
+wsrep_provider_options="gcache.size=2G;gcache.page_size=128M;gcache.keep_pages_count=2;gcache.keep_pages_size=512M;evs.suspect_timeout=PT8S;evs.inactive_timeout=PT25S;gcache.recover=yes"
+
+# ============================================
+# Storage Engine & Character Set
+# ============================================
+default_storage_engine=InnoDB
+character_set_server=utf8mb4
+collation_server=utf8mb4_unicode_ci
+skip_external_locking
+
+# ============================================
+# SQL Mode - Strict for data integrity
+# ============================================
+sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+
+# ============================================
+# Query Cache (DISABLED for Galera)
+# ============================================
+query_cache_type=0
+query_cache_size=0
+
+# ============================================
+# InnoDB Configuration
+# ============================================
+# Buffer pool - 3GB for non-prod (production uses 12.5GB)
+innodb_buffer_pool_size=3G
+innodb_buffer_pool_instances=4
+
+# Log files
+innodb_log_file_size=200M
+innodb_log_buffer_size=16M
+
+# Flushing - relaxed for better performance (production uses 1)
+# 2 = write to log file at each commit, flush to disk every second
+innodb_flush_log_at_trx_commit=2
+innodb_flush_method=fsync
+
+# Data integrity - KEEP ENABLED (production disables for speed, we keep for safety)
+innodb_doublewrite=1
+# innodb_checksum_algorithm uses default (crc32) - production disables (unsafe!)
+
+# File handling
+innodb_file_per_table=1
+innodb_lock_wait_timeout=50
+
+# I/O settings - scaled for non-prod (production: 2500/4000)
+innodb_io_capacity=1000
+innodb_io_capacity_max=2000
+innodb_read_io_threads=8
+innodb_write_io_threads=8
+
+# Flushing optimization
+innodb_lru_scan_depth=2048
+innodb_max_dirty_pages_pct=75
+innodb_adaptive_flushing=ON
+innodb_flush_neighbors=0
+
+# Write-ahead logging
+innodb_log_write_ahead_size=16384
+
+# ============================================
+# Connection Settings
+# ============================================
+max_connections=300
+thread_cache_size=150
+wait_timeout=7200
+net_write_timeout=300
+back_log=64
+
+# ============================================
+# Buffer Sizes
+# ============================================
+sort_buffer_size=1M
+read_buffer_size=1M
+read_rnd_buffer_size=4M
+myisam_sort_buffer_size=64M
+key_buffer_size=256M
+
+# ============================================
+# Table Settings
+# ============================================
+open_files_limit=10240
+table_open_cache=4096
+table_definition_cache=1400
+
+# ============================================
+# Temporary Tables
+# ============================================
+tmp_table_size=64M
+max_heap_table_size=64M
+
+# ============================================
+# Network
+# ============================================
+max_allowed_packet=64M
+net_buffer_length=16K
+thread_stack=256K
+max_join_size=18446744073709551615
+
+# ============================================
+# Replication (for external slaves if needed)
+# ============================================
+binlog_format=ROW
+expire_logs_days=7
+slave_net_timeout=3600
+
+# GTID for advanced replication
+gtid_mode=ON
+enforce_gtid_consistency=ON
+log_slave_updates=ON
+log_bin_trust_function_creators=1
+
+# ============================================
+# Logging
+# ============================================
+slow_query_log=1
+slow_query_log_file=/var/log/mysql/slowquery.log
+long_query_time=2
+# Advanced slow query filtering from production
+log_slow_filter="full_scan,tmp_table_on_disk,filesort_on_disk"
+log_slow_verbosity="full"
+log_error=/var/log/mysql/error.log
